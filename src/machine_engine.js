@@ -1,14 +1,24 @@
-'use_strict'
+/* Modulos
+ -Node-telegram-api
+ -mongoose
+*/
 
-const db = require("./db.js");
+//Importando DataBase
+const db = require("./db.js")
+//Importando Api telegram
 const bot  = require("./Telegram-Api/tapi.js")["bot"]
+
+//Setando DataBase
 var Reply = db.model
 
+//Funcao De Start
 exports.start = (msg) => {
 	
+	//Restringindo o bot a responder apenas mesagens sem narcação
 	if(msg.reply_to_message){
+	//Restringindo o bot a também só responder mensagens no qual ele foi marcado
 	if(msg.reply_to_message.from.id != '952241356'){
-		
+		//Setando opção para enviar ou reconhecer stickers e textos
 		if(msg.reply_to_message.sticker != undefined){
 			const stickerId = msg.reply_to_message.sticker.file_id
 			
@@ -16,7 +26,7 @@ exports.start = (msg) => {
 		  .then(Obj => {
 		  
 		 if(JSON.stringify(Obj) != '[]'){
-		 	 	 console.log('achou')
+		 	 	
 		  var arrayOfReplys = Obj[0].reply
 		   		if(msg.sticker != undefined){
 		    arrayOfReplys.push(msg.sticker.file_id )
@@ -24,7 +34,6 @@ exports.start = (msg) => {
 		       arrayOfReplys.push(msg.text)
 		    }
 		    
-		    console.log(arrayOfReplys)
 		    
 		Reply.findOneAndUpdate({message: stickerId}, {reply: arrayOfReplys}, {new: true})
 			  .then(data => {
@@ -44,7 +53,7 @@ exports.start = (msg) => {
 		} else if(msg.reply_to_message.text != undefined){
 		
 	   const messageText = msg.reply_to_message.text
-		//for(let i = 0; i < replys.length; i++){
+
 		  Reply.find({message: messageText})
 		    .then(Obj => {
 		    
@@ -77,7 +86,7 @@ exports.start = (msg) => {
 		  .catch(err => {
 		     console.log(err)
 		  })
-		//}
+		
 		}
 	}
 	}
@@ -100,7 +109,7 @@ exports.start = (msg) => {
 			const textToSend = data[0].reply[Math.floor(Math.random()* data[0].reply.length)]
 			replyUser(msg, textToSend)
 		  } else {
-			console.log('Sem resposta!')
+		//Para testes, console.log('Sem resposta!')
 			}
 			})
 		.catch(error => {
@@ -115,7 +124,7 @@ Reply.find({message: stickerId})
 			const textToSend = data[0].reply[Math.floor(Math.random()* data[0].reply.length)]
 			replyUser(msg, textToSend)
 		  } else {
-			console.log('Sem resposta!')
+			//Para testes, console.log('Sem resposta!')
 			}
 			})
 		.catch(error => {
@@ -124,6 +133,7 @@ Reply.find({message: stickerId})
 
 	}
 	}
+	//Funcao para adicionar uma resposta a DataBase
 	function addNewReply(msg){
 		
 		const messageObject = {
@@ -144,6 +154,7 @@ Reply.find({message: stickerId})
 		  })
 	}
 	
+	//Funcao para adicionar novo sticker(file_id) na data base
 	function addNewReplyFile(msg){
 	  var reply = ''
 		if(msg.sticker != undefined){
@@ -170,6 +181,7 @@ Reply.find({message: stickerId})
 		  })
 	}
 	
+	//Funcao para responder o usuário
 	function replyUser(msg, reply){
 	
 	    const chatid = msg.chat.id
@@ -180,17 +192,18 @@ Reply.find({message: stickerId})
 	        reply_to_message_id: replyId
 	        
 	    }
-	    
+	    //Lógica: Caso falhar em enviar o sticker, ele irá enviar a mensagem
 	    bot.sendSticker(chatid, messageToSend, options)
 	     .then(s => {
-				console.log('sucess')
+				//Para testes, console.log('sucess')
 	   		})
 	   	.catch(e => {
-	   	     console.log(e.message)
+	   	     //Para testes, console.log(e.message)
 	   		 bot.sendMessage(chatid, messageToSend, options)
 	   	})
 	   	
     }
+    //Funcao teste
     /*
     function replyUserFile(msg, reply){
     
