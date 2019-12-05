@@ -12,126 +12,126 @@ const bot  = require("./Telegram-Api/tapi.js")["bot"]
 var Reply = db.model
 
 //Funcao De Start
-exports.start = (msg) => {
+exports.start = async (msg) => {
+	const dadosBot = await bot.getMe()
+	// console.log(dadosBot) // Pra saber dados do bot
 	
 	//Restringindo o bot a responder apenas mesagens sem narcação
-	if(msg.reply_to_message){
-	//Restringindo o bot a também só responder mensagens no qual ele foi marcado
-	if(msg.reply_to_message.from.id != '952241356'){
-		//Setando opção para enviar ou reconhecer stickers e textos
-		if(msg.reply_to_message.sticker != undefined){
-			const stickerId = msg.reply_to_message.sticker.file_id
-			
-		Reply.find({message: stickerId})
-		  .then(Obj => {
-		  
-		 if(JSON.stringify(Obj) != '[]'){
-		 	 	
-		  var arrayOfReplys = Obj[0].reply
-		   		if(msg.sticker != undefined){
-		    arrayOfReplys.push(msg.sticker.file_id )
-		    } else {
-		       arrayOfReplys.push(msg.text)
-		    }
-		    
-		    
-		Reply.findOneAndUpdate({message: stickerId}, {reply: arrayOfReplys}, {new: true})
-			  .then(data => {
-				  console.log(data)
-		  })
-		    .catch(error => {
-		       console.log(error)
-		    })
-		   } else {
-		      console.log(Obj)
-		   	addNewReplyFile(msg, stickerId)
-		   }
-				})
-		.catch(err => {
-		   console.log(err)
-		})
-		} else if(msg.reply_to_message.text != undefined){
-		
-	   const messageText = msg.reply_to_message.text
+	if(msg.reply_to_message) { // Se for uma resposta/reply, esse 'if' é true entao vai executar, se for undefined ou null é false
+		//Restringindo o bot a também só responder mensagens no qual ele foi marcado
+		if(msg.reply_to_message.from.id != dadosBot.id) { // Ao inves de colocar um ID fixo do bot, verificar se o id de quem mandou a mensagem é o mesmo do bot
+			//Setando opção para enviar ou reconhecer stickers e textos
+			if(msg.reply_to_message.sticker) { // Em checagens 'if', qualquer valor diferente de undefined, null, false ou até zero é igual a true
+				// Entao dentro de 'if's, undefined == null == false, apenas em checagens do tipo boolean (true e false)
+				const stickerId = msg.reply_to_message.sticker.file_id
 
-		  Reply.find({message: messageText})
-		    .then(Obj => {
-		    
-		   if(JSON.stringify(Obj) != '[]'){
-		   	 	 console.log('achou')
-		    var arrayOfReplys = Obj[0].reply
-		     
-		     if(msg.sticker != undefined){
-		    	 arrayOfReplys.push(msg.sticker.file_id )
-		    	 console.log(arrayOfReplys)
-		     } else {
-			     arrayOfReplys.push(msg.text)
-		     }
-		      
-		      console.log(arrayOfReplys)
-		      
-		  Reply.findOneAndUpdate({message: messageText}, {reply: arrayOfReplys}, {new: true})
-		  	  .then(data => {
-		  		  console.log(data)
-		    })
-		      .catch(error => {
-		         console.log(error)
-		      })
-		     } else {
-		     
-		        console.log(Obj)
-		     	addNewReply(msg, messageText)
-		     }
-		})
-		  .catch(err => {
-		     console.log(err)
-		  })
-		
+				var Obj = await Reply.find({message: stickerId})
+					
+				if(JSON.stringify(Obj) != '[]') {
+				
+					var arrayOfReplys = Obj[0].reply
+					if(msg.sticker) { // Novamente aqui o valor é true se for diferente de undefined, null ou false
+						arrayOfReplys.push(msg.sticker.file_id)
+					}
+					else {
+						arrayOfReplys.push(msg.text)
+					}
+					
+					Reply.findOneAndUpdate({message: stickerId}, {reply: arrayOfReplys}, {new: true})
+						.then(data => {
+							console.log(data)
+					  	})
+					  	.catch(error => {
+					   		console.log(error)
+						})
+				}
+
+				   else {
+				    	console.log(Obj)
+				   		addNewReplyFile(msg, stickerId)
+				   }
+				
+			} else if(msg.reply_to_message.text) {
+			
+		   		const messageText = msg.reply_to_message.text
+
+				var Obj = await Reply.find({message: messageText})
+					.catch(err => {
+						console.log(err.message)
+						return
+					})
+				
+			   	if(JSON.stringify(Obj) != '[]') {
+			   		console.log('achou')
+			    	var arrayOfReplys = Obj[0].reply
+			
+			    	if(msg.sticker){
+			    		arrayOfReplys.push(msg.sticker.file_id )
+			    	 	console.log(arrayOfReplys)
+			    	} else {
+				    	arrayOfReplys.push(msg.text)
+			    	}
+			
+			    	console.log(arrayOfReplys)
+			 
+			  	Reply.findOneAndUpdate({message: messageText}, {reply: arrayOfReplys}, {new: true})
+			  		.then(data => {
+			  			console.log(data)
+			    	})
+			      	.catch(error => {
+			        	console.log(error)
+			    	})
+			    } else {
+				
+			        console.log(Obj)
+			     	addNewReply(msg, messageText)
+			    }
+		  
+			}
 		}
 	}
-	}
 	
-	if(msg.reply_to_message == undefined || msg.reply_to_message.from.id == '952241356'){
-	
-	var messageText = ''
-	var stickerId = ''
-  
-  	if(msg.sticker != undefined){
-  		stickerId = msg.sticker.file_id
-  	} else {
- 	 	messageText = msg.text
-  	}
-  		
-	if(msg.text){	   
-	 Reply.find({message: messageText})
-	 	.then(data => {
-		  if(JSON.stringify(data) != '[]'){
-			const textToSend = data[0].reply[Math.floor(Math.random()* data[0].reply.length)]
-			replyUser(msg, textToSend)
-		  } else {
-		//Para testes, console.log('Sem resposta!')
-			}
-			})
-		.catch(error => {
+	if(!msg.reply_to_message || msg.reply_to_message.from.id == dadosBot.id) { // Se valor == undefined, valor == false ou !valor (valor NAO true => !valor)
 		
-		})
-
-	} else if(msg.sticker){
-
-Reply.find({message: stickerId})
-	.then(data => {
-		  if(JSON.stringify(data) != '[]'){
-			const textToSend = data[0].reply[Math.floor(Math.random()* data[0].reply.length)]
-			replyUser(msg, textToSend)
-		  } else {
+		var messageText = ''
+		var stickerId = ''
+		
+  		if(msg.sticker) {
+  			stickerId = msg.sticker.file_id
+  		} else {
+ 		 	messageText = msg.text
+  		}
+	  
+		if(msg.text){	   
+			Reply.find({message: messageText})
+		 		.then(data => {
+					if(JSON.stringify(data) != '[]') {
+						const textToSend = data[0].reply[Math.floor(Math.random()* data[0].reply.length)]
+						replyUser(msg, textToSend)
+			  		} else {
 			//Para testes, console.log('Sem resposta!')
-			}
+					}	
+				})
+				.catch(error => {
+					console.log(error.message) // Mensagem de erro adicionada porque está faltando
 			})
-		.catch(error => {
 		
-		})
-
-	}
+		} else if(msg.sticker) {
+		
+			Reply.find({message: stickerId})
+				.then(data => {
+					if(JSON.stringify(data) != '[]'){
+						const textToSend = data[0].reply[Math.floor(Math.random()* data[0].reply.length)]
+						replyUser(msg, textToSend)
+			  		} else {
+				//Para testes, console.log('Sem resposta!')
+					}
+				})
+				.catch(error => {
+					console.log(error.message)
+			})
+		
+		}
 	}
 	//Funcao para adicionar uma resposta a DataBase
 	function addNewReply(msg){
@@ -146,18 +146,18 @@ Reply.find({message: stickerId})
 		replyDataBase.reply = messageObject.reply[0]
 		
 		replyDataBase.save()
-		 .then(s => {
-		console.log('Salvo')
+		 	.then(() => {
+				console.log('Salvo')
 		})
-		  .catch(e => {
-		  	console.log('Erro: ',e)
+			.catch(e => {
+		  		console.log('Erro: ' + e.message)
 		  })
 	}
 	
 	//Funcao para adicionar novo sticker(file_id) na data base
 	function addNewReplyFile(msg){
-	  var reply = ''
-		if(msg.sticker != undefined){
+		var reply = ''
+		if(msg.sticker) { // msg.sticker != undefined é o mesmo que msg.sticker (true)
 			reply = msg.sticker.file_id
 		} else {
 			reply = msg.text
@@ -173,12 +173,12 @@ Reply.find({message: stickerId})
 		replyDataBase.reply = messageObject.reply[0]
 		
 		replyDataBase.save()
-		 .then(s => {
-		console.log('Salvo')
-		})
-		  .catch(e => {
-		  	console.log('Erro: ',e)
-		  })
+			.then(() => {
+				console.log('Salvo')
+			})
+		  	.catch(e => {
+		  		console.log('Erro: ',e)
+		  	})
 	}
 	
 	//Funcao para responder o usuário
@@ -194,13 +194,13 @@ Reply.find({message: stickerId})
 	    }
 	    //Lógica: Caso falhar em enviar o sticker, ele irá enviar a mensagem
 	    bot.sendSticker(chatid, messageToSend, options)
-	     .then(s => {
+	    	.then(() => {
 				//Para testes, console.log('sucess')
 	   		})
-	   	.catch(e => {
+	   		.catch(() => {
 	   	     //Para testes, console.log(e.message)
-	   		 bot.sendMessage(chatid, messageToSend, options)
-	   	})
+	   			bot.sendMessage(chatid, messageToSend, options)
+	   		})
 	   	
     }
     //Funcao teste
